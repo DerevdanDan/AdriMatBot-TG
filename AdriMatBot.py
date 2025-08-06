@@ -18,6 +18,8 @@ MESSAGES = {
         "answer_incorrect": "Not quite, Adri. The correct answer was {correct_answer}. You'll get it next time!",
         "congratulations": "Fantastic! You answered {correct_count} out of 10 questions correctly. I'll adjust the next batch of problems just for you!",
         "summary_intro": "Here's a quick look at your performance this session:",
+        "progress_intro": "Here is your progress over all sessions, Adri:",
+        "no_progress": "It looks like we haven't completed a session yet! Let's get started with your first one."
     },
     "ru": {
         "start": "Привет, Адри! Я твой личный тренер по математике. Буду присылать тебе весёлые математические задачки. Давай начнём!",
@@ -27,6 +29,8 @@ MESSAGES = {
         "answer_incorrect": "Не совсем. Правильный ответ был {correct_answer}. У тебя всё получится в следующий раз!",
         "congratulations": "Фантастика! Ты ответила правильно на {correct_count} из 10 вопросов. Я подготовлю следующий набор задач специально для тебя!",
         "summary_intro": "Вот краткий обзор твоих результатов за эту сессию:",
+        "progress_intro": "Вот твой прогресс за все сессии, Адри:",
+        "no_progress": "Кажется, мы еще не закончили ни одной сессии! Давай начнем с первой."
     },
     "es": {
         "start": "¡Hola, Adri! Soy tu entrenador de matemáticas personal. Te enviaré divertidos acertijos matemáticos para resolver. ¡Empecemos!",
@@ -36,6 +40,8 @@ MESSAGES = {
         "answer_incorrect": "Casi. La respuesta correcta era {correct_answer}. ¡Lo harás mejor la próxima vez!",
         "congratulations": "¡Fantástico! Respondiste correctamente a {correct_count} de 10 preguntas. ¡Ajustaré el próximo lote de problemas solo para ti!",
         "summary_intro": "Aquí tienes un resumen rápido de tu rendimiento en esta sesión:",
+        "progress_intro": "Aquí está tu progreso en todas las sesiones, Adri:",
+        "no_progress": "¡Parece que aún no hemos completado ninguna sesión! Empecemos con la primera."
     },
     "ca": {
         "start": "Hola, Adri! Sóc el teu entrenador de matemàtiques personal. T'enviaré trencaclosques de matemàtiques divertits per resoldre. Comencem!",
@@ -45,6 +51,8 @@ MESSAGES = {
         "answer_incorrect": "No del tot. La resposta correcta era {correct_answer}. La pròxima vegada ho faràs millor!",
         "congratulations": "Fantàstic! Has respost correctament a {correct_count} de 10 preguntes. Ajustaré el pròxim lot de problemes només per a tu!",
         "summary_intro": "Aquí tens un resum ràpid del teu rendiment en aquesta sessió:",
+        "progress_intro": "Aquí teniu el teu progrés en totes les sessions, Adri:",
+        "no_progress": "Sembla que encara no hem completat cap sessió! Comencem amb la primera."
     },
 }
 
@@ -56,7 +64,6 @@ def generate_math_problem(difficulty="easy"):
     """
     Generates a math problem with varying difficulty and specific constraints.
     """
-    # EASY problems: Simple addition and subtraction for an 8-year-old
     if difficulty == "easy":
         num1 = random.randint(5, 20)
         num2 = random.randint(1, 10)
@@ -64,12 +71,10 @@ def generate_math_problem(difficulty="easy"):
         if operation == '+':
             question = f"{num1} + {num2}"
             answer = num1 + num2
-        else:  # '-'
+        else:
             question = f"{num1} - {num2}"
             answer = num1 - num2
-    
-    # HARD problems: Include multiplication and division with the requested constraints
-    else:  # difficulty == "hard"
+    else:
         operation = random.choice(['+', '-', '*', '/'])
         if operation == '+':
             num1 = random.randint(10, 40)
@@ -82,19 +87,17 @@ def generate_math_problem(difficulty="easy"):
             question = f"{num1} - {num2}"
             answer = num1 - num2
         elif operation == '*':
-            # Multiplication where result is at most 81
             answer = random.randint(1, 9)
             num2 = random.randint(1, 9)
             num1 = int(81 / num2)
             num1 = random.randint(1, num1)
             question = f"{num1} * {num2}"
             answer = num1 * num2
-        else:  # '/'
-            # Division that results in a whole number and the dividend is at most 81
+        else:
             answer = random.randint(2, 9)
             num2 = random.randint(2, 9)
             num1 = answer * num2
-            if num1 > 81: # Ensure dividend is not over 81
+            if num1 > 81:
                 num2 = int(81/answer)
                 num2 = random.randint(2, num2)
                 num1 = answer * num2
@@ -116,7 +119,6 @@ async def start_problems_command(update: Update, context: CallbackContext) -> No
     """Starts the job to send math problems every 6 hours."""
     chat_id = update.effective_chat.id
     
-    # Check if a job for this chat already exists to prevent duplicates
     if 'job' in context.chat_data:
         job = context.chat_data['job']
         if not job.enabled:
@@ -126,8 +128,6 @@ async def start_problems_command(update: Update, context: CallbackContext) -> No
             await update.message.reply_text("I am already sending math problems to you!")
         return
 
-    # Schedule a new job to send problems every 6 hours (21600 seconds)
-    # The first run will happen 1 minute after this command is issued
     job = context.job_queue.run_repeating(send_problems, interval=21600, first=60, chat_id=chat_id, name="math_problems_job")
     context.chat_data['job'] = job
     
@@ -139,7 +139,6 @@ async def send_problems(context: CallbackContext) -> None:
     language_code = random.choice(MATH_LANGUAGES)
     chat_id = job.chat_id
 
-    # Check Adri's previous performance to determine difficulty
     correct_answers = context.chat_data.get('correct_answers', 0)
     total_questions = context.chat_data.get('total_questions', 0)
     
@@ -147,7 +146,6 @@ async def send_problems(context: CallbackContext) -> None:
     if total_questions > 0 and (correct_answers / total_questions) >= 0.7:
         difficulty = "hard"
     
-    # Reset the session's score trackers for the new batch of problems
     context.chat_data['correct_answers'] = 0
     context.chat_data['total_questions'] = 0
     context.chat_data['current_answers'] = {}
@@ -162,7 +160,6 @@ async def send_problems(context: CallbackContext) -> None:
         
         question_text_intro = MESSAGES.get(language_code, MESSAGES["en"])["question"].format(number=i)
         
-        # Store the answer and the question itself for the current set of problems
         context.chat_data['current_answers'][str(i)] = answer
         context.chat_data['current_questions'][str(i)] = f"{question}"
         
@@ -180,11 +177,9 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
 
     answered_questions_count = len(chat_data.get('answered_questions', {}))
     
-    # We only process answers for the current session
     if answered_questions_count >= chat_data.get('total_questions', 0):
         return
 
-    # Look for the current question
     for i in range(1, 11):
         question_key = str(i)
         if question_key in chat_data['current_answers']:
@@ -195,12 +190,10 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
                 user_answer_int = int(user_answer)
                 is_correct = (user_answer_int == correct_answer)
             except ValueError:
-                # The user didn't enter a number
                 return
 
             user_lang = update.effective_user.language_code
             
-            # Store the result of the answer
             if 'answered_questions' not in chat_data:
                 chat_data['answered_questions'] = {}
             
@@ -211,7 +204,6 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
                 'is_correct': is_correct
             }
             
-            # Send immediate feedback to Adri
             if is_correct:
                 chat_data['correct_answers'] += 1
                 message_text = MESSAGES.get(user_lang, MESSAGES["en"])["answer_correct"]
@@ -220,19 +212,23 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
             
             await update.message.reply_text(message_text)
             
-            # Remove the answered question from the list
             del chat_data['current_answers'][question_key]
             
-            # Check if all questions are answered
             if not chat_data['current_answers']:
                 correct_count = chat_data['correct_answers']
                 message_text = MESSAGES.get(user_lang, MESSAGES["en"])["congratulations"].format(correct_count=correct_count)
                 await update.message.reply_text(message_text)
                 
-                # After the congratulatory message, provide the summary
+                # Save the session result for long-term progress tracking
+                if 'progress_history' not in chat_data:
+                    chat_data['progress_history'] = []
+                chat_data['progress_history'].append({
+                    'correct': correct_count,
+                    'total': chat_data['total_questions']
+                })
+                
                 await send_summary(update, context)
             
-            # Stop after processing the first valid answer
             break
 
 async def send_summary(update: Update, context: CallbackContext) -> None:
@@ -259,8 +255,33 @@ async def send_summary(update: Update, context: CallbackContext) -> None:
             
     await update.message.reply_text(summary_text, parse_mode='Markdown')
     
-    # We should also reset the answered questions list for the next session
     chat_data['answered_questions'] = {}
+
+async def progress_command(update: Update, context: CallbackContext) -> None:
+    """Sends a summary of Adri's long-term progress."""
+    user_lang = update.effective_user.language_code
+    chat_data = context.chat_data
+    
+    history = chat_data.get('progress_history', [])
+    
+    if not history:
+        message_text = MESSAGES.get(user_lang, MESSAGES["en"])["no_progress"]
+        await update.message.reply_text(message_text)
+        return
+        
+    message_text = MESSAGES.get(user_lang, MESSAGES["en"])["progress_intro"]
+    
+    total_correct = sum(session['correct'] for session in history)
+    total_questions = sum(session['total'] for session in history)
+    
+    for i, session in enumerate(history):
+        message_text += f"\n\n**Session {i + 1}:**"
+        message_text += f"\nCorrect: {session['correct']} / {session['total']}"
+    
+    message_text += f"\n\n**Overall Progress:**"
+    message_text += f"\nCorrect: {total_correct} / {total_questions}"
+    
+    await update.message.reply_text(message_text, parse_mode='Markdown')
             
 def main() -> None:
     """Start the bot."""
@@ -269,11 +290,13 @@ def main() -> None:
         logging.error("Error: TELEGRAM_TOKEN environment variable is not set.")
         return
 
+    # Create a new Application instance and pass the job_queue
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     
     # Handlers for commands
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("startproblems", start_problems_command))
+    application.add_handler(CommandHandler("progress", progress_command))
 
     # Handler for user's answers (any text that isn't a command)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
